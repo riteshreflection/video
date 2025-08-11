@@ -2,6 +2,8 @@ import os
 import yt_dlp
 import logging
 from urllib.parse import urlparse, parse_qs
+import base64
+
 
 def write_cookies_file():
     """
