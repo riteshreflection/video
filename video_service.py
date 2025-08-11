@@ -37,6 +37,10 @@ def extract_video_data(video_url):
     Returns:
         dict: Video metadata and streaming URLs
     """
+
+    COOKIES_PATH = os.path.join(os.path.dirname(__file__), "cookies.txt")
+
+    
     try:
         # Write cookies.txt before extraction
         write_cookies_file()
@@ -45,7 +49,7 @@ def extract_video_data(video_url):
             'format': 'best[ext=mp4]/best',
             'quiet': False,  # For debugging, set to True in production
             'no_warnings': False,
-            'cookiefile': 'cookies.txt',
+            'cookiefile': COOKIES_PATH,
             'http_headers': {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
             },
