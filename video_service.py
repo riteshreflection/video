@@ -1,6 +1,21 @@
+import os
 import yt_dlp
 import logging
 from urllib.parse import urlparse, parse_qs
+
+def write_cookies_file():
+    """
+    Write cookies content from env variable YOUTUBE_COOKIES into cookies.txt file.
+    This must be called once before yt-dlp runs.
+    """
+    cookies_content = os.getenv('YOUTUBE_COOKIES')
+    if cookies_content:
+        with open('cookies.txt', 'w') as f:
+            f.write(cookies_content)
+    else:
+        # Remove cookies.txt if exists and no cookie env is set
+        if os.path.exists('cookies.txt'):
+            os.remove('cookies.txt')
 
 def extract_video_data(video_url):
     """
@@ -13,6 +28,9 @@ def extract_video_data(video_url):
         dict: Video metadata and streaming URLs
     """
     try:
+        # Write cookies.txt before extraction
+        write_cookies_file()
+
         # Configure yt-dlp options
         ydl_opts = {
             'format': 'best[ext=mp4]/best',  # Prefer mp4 format
@@ -21,6 +39,7 @@ def extract_video_data(video_url):
             'extractaudio': False,
             'audioformat': 'mp3',
             'outtmpl': '%(title)s.%(ext)s',
+            'cookiefile': 'cookies.txt',  # Use cookies for authenticated requests
         }
         
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
