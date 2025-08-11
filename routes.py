@@ -1,11 +1,15 @@
-from flask import request, jsonify
-from app import app
-from video_service import extract_video_data
+from flask import Flask, request, jsonify
+import os
 import logging
+from video_service import extract_video_data, write_cookies_file
+
+app = Flask(__name__)
+
+# Write cookies.txt on app startup from env var
+write_cookies_file()
 
 @app.route('/')
 def index():
-    """API service information"""
     return jsonify({
         'service': 'YouTube Video Data Extraction API',
         'version': '1.0.0',
@@ -16,40 +20,24 @@ def index():
 
 @app.route('/video', methods=['GET'])
 def get_video_data():
-    """
-    Extract YouTube video data and streaming URLs
-    
-    Parameters:
-    - url: YouTube video URL (required)
-    
-    Returns:
-    JSON response with video metadata and streaming URLs
-    """
+    video_url = request.args.get('url')
+    if not video_url:
+        return jsonify({
+            'error': 'Missing required parameter: url',
+            'message': 'Please provide a YouTube URL using the url parameter'
+        }), 400
+
+    if 'youtube.com' not in video_url and 'youtu.be' not in video_url:
+        return jsonify({
+            'error': 'Invalid URL',
+            'message': 'Please provide a valid YouTube URL'
+        }), 400
+
     try:
-        # Get YouTube URL from query parameters
-        video_url = request.args.get('url')
-        
-        if not video_url:
-            return jsonify({
-                'error': 'Missing required parameter: url',
-                'message': 'Please provide a YouTube URL using the url parameter'
-            }), 400
-        
-        # Validate that it's a YouTube URL
-        if 'youtube.com' not in video_url and 'youtu.be' not in video_url:
-            return jsonify({
-                'error': 'Invalid URL',
-                'message': 'Please provide a valid YouTube URL'
-            }), 400
-        
-        # Extract video data using yt-dlp
         video_data = extract_video_data(video_url)
-        
         if video_data.get('error'):
             return jsonify(video_data), 404
-        
         return jsonify(video_data), 200
-        
     except Exception as e:
         logging.error(f"Error processing video request: {str(e)}")
         return jsonify({
@@ -59,7 +47,6 @@ def get_video_data():
 
 @app.route('/health', methods=['GET'])
 def health_check():
-    """Health check endpoint"""
     return jsonify({
         'status': 'healthy',
         'service': 'YouTube Video Data Extraction Server',
@@ -68,7 +55,6 @@ def health_check():
 
 @app.errorhandler(404)
 def not_found(error):
-    """Handle 404 errors"""
     return jsonify({
         'error': 'Endpoint not found',
         'message': 'The requested endpoint does not exist'
@@ -76,8 +62,10 @@ def not_found(error):
 
 @app.errorhandler(500)
 def internal_error(error):
-    """Handle 500 errors"""
     return jsonify({
         'error': 'Internal server error',
         'message': 'An unexpected error occurred'
     }), 500
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
