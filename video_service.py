@@ -5,18 +5,25 @@ from urllib.parse import urlparse, parse_qs
 
 def write_cookies_file():
     """
-    Write cookies content from env variable YOUTUBE_COOKIES into cookies.txt file.
+    Write cookies content from base64-encoded env variable YOUTUBE_COOKIES into cookies.txt file.
     This must be called before yt-dlp runs.
     """
-    cookies_content = os.getenv('YOUTUBE_COOKIES')
-    if cookies_content:
-        with open('cookies.txt', 'w', encoding='utf-8') as f:
-            f.write(cookies_content)
-        logging.info("Cookies file written successfully")
+    cookies_base64 = os.getenv('YOUTUBE_COOKIES')
+    if cookies_base64:
+        try:
+            decoded_cookies = base64.b64decode(cookies_base64)
+            with open('cookies.txt', 'wb') as f:  # write in binary mode
+                f.write(decoded_cookies)
+            logging.info("Cookies file written successfully")
+        except Exception as e:
+            logging.error(f"Failed to decode and write cookies: {e}")
+            if os.path.exists('cookies.txt'):
+                os.remove('cookies.txt')
     else:
         if os.path.exists('cookies.txt'):
             os.remove('cookies.txt')
             logging.info("Cookies file removed as no cookie env var set")
+
 
 def extract_video_data(video_url):
     """
